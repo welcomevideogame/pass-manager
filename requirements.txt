@@ -1,0 +1,2 @@
+customtkinter==4.4.1
+cryptography==37.0.3

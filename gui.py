@@ -1,12 +1,18 @@
+import os
 from tkinter import *
 import tkinter as tk
+from tkinter import filedialog
+from tkinter import dialog
+from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Progressbar
 import customtkinter as ct
-from cleanser import Clean
 from functools import partial
 
 import passGen
 from passGen import Generator
+from crypt import Encryption
+from cleanser import Clean
+from saveFile import Save
 
 
 class PassGUI:
@@ -20,6 +26,8 @@ class PassGUI:
     main_slider_label = None
     max_pass_length = 128
     passwordLevel = 1
+    file_location = None
+    key_location = None
 
     #---------------------------- Settings Components
     settings_dim_w = 350
@@ -111,11 +119,40 @@ class PassGUI:
                                 width=10,
                                 corner_radius=10,
                                 command=lambda: self.change_screen("settings", "main"))
-        back_button.place(relx=.87, rely=.1, anchor=tk.CENTER)
+
+        gen_key_button = ct.CTkButton(master=self.settings_frame,
+                                text="Generate Key",
+                                width=130,
+                                corner_radius=10,
+                                command=lambda: self.generate_key())
+
+        sel_key_button = ct.CTkButton(master=self.settings_frame,
+                                text="Select Key",
+                                width=130,
+                                corner_radius=10,
+                                command=lambda: self.select_key())
+
+        gen_log_button = ct.CTkButton(master=self.settings_frame,
+                                text="Generate Savefile",
+                                width=130,
+                                corner_radius=10,
+                                command=lambda: self.generate_savefile())
+
+        sel_log_button = ct.CTkButton(master=self.settings_frame,
+                                text="Select Savefile",
+                                width=130,
+                                corner_radius=10,
+                                command=lambda: self.select_savefile())
         
         self.progressbar = ct.CTkProgressBar(master=self.settings_frame)
         self.update_security_bar()
-        self.progressbar.place(relx=.5, rely=.8, anchor=tk.CENTER)
+        self.progressbar.place(relx=.5, rely=.75, anchor=tk.CENTER)
+        back_button.place(relx=.87, rely=.1, anchor=tk.CENTER)
+
+        gen_key_button.place(relx=.3, rely=.84, anchor=tk.CENTER)
+        sel_key_button.place(relx=.3, rely=.95, anchor=tk.CENTER)
+        gen_log_button.place(relx=.7, rely=.84, anchor=tk.CENTER)
+        sel_log_button.place(relx=.7, rely=.95, anchor=tk.CENTER)
 
     
     def update_settings(self, index):
@@ -136,8 +173,46 @@ class PassGUI:
             self.progressbar.configure(progress_color="orange")
         else:
             self.progressbar.configure(progress_color="red")
-        
-            
+
+    def generate_key(self):
+        direc = filedialog.askdirectory()
+        if direc != "":
+            path = Encryption.generate_key(direc)
+            if not path:
+                self.invalid_file_message()
+            else:
+                self.key_location = path
+                self.file_setup()
+
+    def generate_savefile(self):
+        direc = filedialog.askdirectory()
+        if direc != "":
+            path = Save.create_new(direc)
+            if not path:
+                self.invalid_file_message()
+            else:
+                self.file_location = path
+                self.file_setup()
+
+    def select_key(self):
+        file = filedialog.askopenfile(filetypes=[('Key Files', '*.key')])
+        if file:
+            self.key_location = os.path.abspath(file.name)
+
+    def select_savefile(self):
+        file = filedialog.askopenfile(filetypes=[('Comma Separated Value Files', '*.csv')])
+        if file:
+            self.file_location = os.path.abspath(file.name)
+
+    def invalid_file_message(self):
+        dialog = tk.messagebox.showerror(title="Invalid", message="File already exists in this folder!")
+
+    def file_setup(self):
+        f = self.file_location
+        k = self.key_location
+        if f and k:
+            Encryption.encrypt(f, k)
+
     def screen_size(self, screen):
         w = {"main": self.main_dim_w, 
             "settings": self.settings_dim_w}
@@ -164,7 +239,12 @@ class PassGUI:
 
     def get_password(self, website, username):
         if "" in [website, username]:
-            print("empty")
-            self.main_result_label.config(text="Invalid website or username")
-            return 0
-        print("generating password")
+            self.gen_error_message("missing website or username")
+        elif all(i == False for i in self.settings_config):
+            self.gen_error_message("must have at least one setting selected")
+        elif not (self.file_location and self.key_location):
+            self.gen_error_message("need files")
+
+    def gen_error_message(self, message):
+        dialog = tk.messagebox.showerror(title="Invalid", message=message)
+

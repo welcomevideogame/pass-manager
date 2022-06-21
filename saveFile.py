@@ -5,12 +5,13 @@ class Save:
 
 
     @staticmethod
-    def create_new():
-        path = "./logins.csv"
-        if exists(path): return 0
-        with open('logins.csv', 'w', newline='') as file:
+    def create_new(path):
+        path = fr"{path}/logins.csv"
+        if exists(path): return None
+        with open(path, 'w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(["Website", "Username","Password"])
+                return path
 
     @staticmethod
     def save_password(website, username, password):
