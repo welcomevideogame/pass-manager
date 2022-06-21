@@ -42,7 +42,7 @@ class PassGUI:
     settings_config.append(True)    # uppercase
     settings_config.append(False)   # punctuation
     security_levels = [30, 20, 10, 20, 20]
-
+    password_length = 64
 
     def __init__(self):
         self.config()
@@ -97,6 +97,7 @@ class PassGUI:
 
     def update_slider_label(self, value):
         self.main_slider_label.config(text=str(int(value)))
+        self.password_length = value
 
     def build_settings(self):
         titles = Clean.left_justify(["Symbols", "Numbers", "Lowercase", "Uppercase", "Punctuation"])
@@ -244,6 +245,8 @@ class PassGUI:
             self.gen_error_message("must have at least one setting selected")
         elif not (self.file_location and self.key_location):
             self.gen_error_message("need files")
+        else:
+            Save.save_login(self.file_location, self.key_location, website, username, Generator.generate_password(self.settings_config, int(self.password_length)))
 
     def gen_error_message(self, message):
         dialog = tk.messagebox.showerror(title="Invalid", message=message)

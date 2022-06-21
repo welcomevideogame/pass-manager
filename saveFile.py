@@ -1,5 +1,6 @@
 import csv
 from os.path import exists
+from crypt import Encryption
 
 class Save:
 
@@ -14,7 +15,9 @@ class Save:
                 return path
 
     @staticmethod
-    def save_password(website, username, password):
-        with open('logins.csv', 'a', newline='') as file:
-            writer = csv.writer(file)
+    def save_login(file, key, website, username, password):
+        Encryption.decrypt(file, key)
+        with open(file, 'a', newline='') as f:
+            writer = csv.writer(f)
             writer.writerow([website, username, password])
+        Encryption.encrypt(file, key)
