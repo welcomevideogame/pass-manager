@@ -16,3 +16,16 @@ class Clean:
     def clean_logins_list(string_list, website):
         return [i.split(',') for i in string_list if i.split(',')[0] == website][0]
         
+    @staticmethod
+    def filter_existing_logins(string_list, website, username):
+        return [i.split(',')[0] for i in string_list if i.split(',')[0] == website and i.split(',')[1] == username] != []
+
+    @staticmethod
+    def change_password_list(string_list, website, username, password):
+        values = []
+        for i in string_list:
+            j = i.split(',')
+            if j[0] == website and j[1] == username:
+                j[2] = password
+            values.append(j)
+        return values

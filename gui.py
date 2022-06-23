@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import dialog
 from tkinter.filedialog import askopenfilename
+from tkinter.messagebox import askyesno
 from tkinter.ttk import Progressbar
 import customtkinter as ct
 from functools import partial
@@ -232,7 +233,7 @@ class PassGUI:
         self.login_password_field.config(state="normal")
         self.login_username_field.delete(0, END)
         self.login_password_field.delete(0, END)
-        
+
         if website != "None":
             login = self.file_system.get_login(website)
             self.login_username_field.insert(0, login[1])
@@ -358,7 +359,10 @@ class PassGUI:
         elif not (self.file_location and self.key_location):
             self.gen_error_message("need files")
         else:
-            self.file_system.save_login(website, username, Generator.generate_password(self.settings_config, int(self.password_length)))
+            password = Generator.generate_password(self.settings_config, int(self.password_length))
+            if not self.file_system.save_login(website, username, password): # method returns 0 if fails to save (existing login)
+                if askyesno(title="Already Exists", message="Login already exists with the same username. Would you like to overwrite it?"):
+                    self.file_system.overwrite_login(website, username, password)
 
     def gen_error_message(self, message):
         dialog = tk.messagebox.showerror(title="Invalid", message=message)
