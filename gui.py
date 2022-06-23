@@ -53,6 +53,7 @@ class PassGUI:
     logins_dim_h = 200
     logins_frame = ct.CTkFrame(root, width=logins_dim_w, height=logins_dim_h)
     login_combobox = None
+    login_combobox2 = None
     login_username_field = None
     login_password_field = None
 
@@ -177,6 +178,7 @@ class PassGUI:
     def build_logins(self):
         clipboard_image = tk.PhotoImage(file='./resources/clipboard.png')
         self.login_combobox = ct.CTkComboBox(master=self.logins_frame)
+        self.login_combobox2 = ct.CTkComboBox(master=self.logins_frame)
         self.login_username_field = ct.CTkEntry(master=self.logins_frame,
                         placeholder_text="Username",
                         width=380,
@@ -215,7 +217,8 @@ class PassGUI:
                         corner_radius=0,
                         command=lambda: self.copy_clipboard(self.login_password_field.get()))
 
-        self.login_combobox.place(relx=.5, rely=.2, anchor=tk.CENTER)
+        self.login_combobox.place(relx=.2, rely=.2, anchor=tk.CENTER)
+        self.login_combobox2.place(relx=.5, rely=.2, anchor=tk.CENTER)
         back_button.place(relx=.87, rely=.2, anchor=tk.CENTER)
 
         self.login_username_field.place(relx=.42, rely=.55, anchor=tk.CENTER)
@@ -228,27 +231,45 @@ class PassGUI:
             pyperclip.copy(text)
 
 
-    def display_login(self, website):
+    def display_login(self, username):
         self.login_username_field.config(state="normal")  # there has to be a better way to insert text to readonly fields
         self.login_password_field.config(state="normal")
-        self.login_username_field.delete(0, END)
-        self.login_password_field.delete(0, END)
+        self.clear_login_fields()
 
-        if website != "None":
-            login = self.file_system.get_login(website)
+        if username != "":
+            login = self.file_system.get_login(self.login_combobox.get(), username)
             self.login_username_field.insert(0, login[1])
             self.login_password_field.insert(0, login[2])
 
         self.login_username_field.config(state="readonly")
         self.login_password_field.config(state="readonly")
 
+    def update_website(self, website):
+        if website == "None":
+            self.login_combobox2.config(values=[])
+            self.login_combobox2.set("")
+            self.login_combobox2.config(state="disabled")
+            self.clear_login_fields()
+        else:
+            self.login_combobox2.set("")
+            usernames = self.file_system.get_usernames(website)
+            self.login_combobox2.config(state="normal")
+            self.login_combobox2.config(values=usernames)
+            self.clear_login_fields()
+
+    def clear_login_fields(self):
+        self.login_username_field.delete(0, END)
+        self.login_password_field.delete(0, END)
+
     def set_login_combobox(self):
         websites = self.file_system.get_websites()
         websites.insert(0, "None")
         self.login_combobox.config(values=websites)
-        #self.login_combobox.config(state="readonly", text_color="black") Seems to not want to cooperate
         self.login_combobox.set("None")
-        self.login_combobox.config(command=self.display_login)
+        self.login_combobox2.set("")
+        self.login_combobox2.config(state="disabled")
+        self.login_combobox.config(command=self.update_website)
+        self.login_combobox2.config(command=self.display_login)
 
     def update_settings(self, index):
         self.settings_config[index] = not self.settings_config[index]
@@ -304,7 +325,7 @@ class PassGUI:
             self.check_files()
 
     def invalid_file_message(self):
-        dialog = tk.messagebox.showerror(title="Invalid", message="File already exists in this folder!")
+        tk.messagebox.showerror(title="Invalid", message="File already exists in this folder!")
 
     def file_setup(self):
         f = self.file_location
@@ -353,11 +374,13 @@ class PassGUI:
 
     def get_password(self, website, username):
         if "" in [website, username]:
-            self.gen_error_message("missing website or username")
+            self.gen_error_message("Missing website or username")
         elif all(i == False for i in self.settings_config):
-            self.gen_error_message("must have at least one setting selected")
+            self.gen_error_message("Must have at least one setting selected")
+        elif "," in website or "," in username:
+            self.gen_error_message("Invalid character")
         elif not (self.file_location and self.key_location):
-            self.gen_error_message("need files")
+            self.gen_error_message("Savefile or key is missing. Locate or generate in settings.")
         else:
             password = Generator.generate_password(self.settings_config, int(self.password_length))
             if not self.file_system.save_login(website, username, password): # method returns 0 if fails to save (existing login)
@@ -365,5 +388,5 @@ class PassGUI:
                     self.file_system.overwrite_login(website, username, password)
 
     def gen_error_message(self, message):
-        dialog = tk.messagebox.showerror(title="Invalid", message=message)
+        tk.messagebox.showerror(title="Invalid", message=message)
 

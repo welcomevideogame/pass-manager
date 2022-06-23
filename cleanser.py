@@ -10,11 +10,13 @@ class Clean:
 
     @staticmethod
     def clean_website_list(string_list):
-        return [i.split(',')[0] for i in string_list][1:]
+        new_list = []
+        [new_list.append(i.split(',')[0]) for i in string_list if i.split(',')[0] not in new_list]
+        return new_list[1:]
 
     @staticmethod
-    def clean_logins_list(string_list, website):
-        return [i.split(',') for i in string_list if i.split(',')[0] == website][0]
+    def clean_logins_list(string_list, website, username):
+        return [i.split(',') for i in string_list if i.split(',')[0] == website and i.split(',')[1] == username][0]
         
     @staticmethod
     def filter_existing_logins(string_list, website, username):
@@ -29,3 +31,7 @@ class Clean:
                 j[2] = password
             values.append(j)
         return values
+
+    @staticmethod
+    def filter_usernames(string_list, website):
+        return [i.split(',')[1] for i in string_list if i.split(',')[0] == website]

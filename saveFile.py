@@ -46,9 +46,11 @@ class Save:
     def get_websites(self):
         return Clean.clean_website_list(self.grab_list())
 
-    def get_login(self, website):
-        return Clean.clean_logins_list(self.grab_list(), website) # will need to fix this
+    def get_login(self, website, username):
+        return Clean.clean_logins_list(self.grab_list(), website, username)
 
+    def get_usernames(self, website):
+        return Clean.filter_usernames(self.grab_list(), website)
 
     def grab_list(self):
         values = []
