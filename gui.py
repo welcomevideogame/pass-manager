@@ -20,12 +20,19 @@ class PassGUI:
     main_dim_w = 330
     main_dim_h = 275
     main_frame = ct.CTkFrame(root, width=main_dim_w, height=main_dim_h)
+    main_slider = None
     main_slider_label = None
     logins_button = None
+    mode_button = None
+    main_password_entry = None
+    main_web_entry = None
+    main_user_entry = None
+    main_gen_button = None
     max_pass_length = 128
     passwordLevel = 1
     file_location = None
     key_location = None
+    mode = 2
 
     #---------------------------- Settings Components
     settings_dim_w = 350
@@ -68,26 +75,34 @@ class PassGUI:
         self.root.iconbitmap('./resources/key.ico')
 
     def build_main(self):
-        web_entry = ct.CTkEntry(master=self.main_frame,
+        self.main_web_entry = ct.CTkEntry(master=self.main_frame,
                                placeholder_text="Website",
                                width=150,
                                height=32,
                                border_width=2,
                                corner_radius=10)
 
-        user_entry = ct.CTkEntry(master=self.main_frame,
+        self.main_user_entry = ct.CTkEntry(master=self.main_frame,
                         placeholder_text="Username",
                         width=150,
                         height=32,
                         border_width=2,
                         corner_radius=10)
 
-        slider = ct.CTkSlider(master=self.main_frame, from_=8, to=self.max_pass_length, number_of_steps=64, command = self.update_slider_label)
+        self.main_password_entry = ct.CTkEntry(master=self.main_frame,
+                placeholder_text="Password",
+                width=150,
+                height=32,
+                border_width=2,
+                corner_radius=10,
+                show="*")
+
+        self.main_slider = ct.CTkSlider(master=self.main_frame, from_=8, to=self.max_pass_length, number_of_steps=64, command = self.update_slider_label)
         self.main_slider_label = ct.CTkLabel(master=self.main_frame, text=int(self.max_pass_length/2))
 
-        gen_button = ct.CTkButton(master=self.main_frame,
+        self.main_gen_button = ct.CTkButton(master=self.main_frame,
                                 text="Generate Password", 
-                                command=lambda: self.get_password(web_entry.get(), user_entry.get()))
+                                command=lambda: self.get_password(self.main_web_entry.get(), self.main_user_entry.get()))
 
         settings_button = ct.CTkButton(master=self.main_frame,
                                 text="Settings",
@@ -101,14 +116,37 @@ class PassGUI:
                                 corner_radius=10,
                                 command=lambda: self.change_screen("main", "logins"))
 
-        web_entry.place(relx=.5, rely=.15, anchor=tk.CENTER)
-        user_entry.place(relx=.5, rely=.35, anchor=tk.CENTER)
-        slider.place(relx=0.5, rely=0.58, anchor=tk.CENTER)
+        self.mode_button = ct.CTkButton(master=self.main_frame,
+                        text="Mode",
+                        width=75,
+                        corner_radius=10,
+                        command=lambda: self.change_main_mode())
+
+        self.main_web_entry.place(relx=.5, rely=.15, anchor=tk.CENTER)
+        self.main_user_entry.place(relx=.5, rely=.35, anchor=tk.CENTER)
+        self.main_slider.place(relx=0.5, rely=0.58, anchor=tk.CENTER)
         self.main_slider_label.place(relx=0.5, rely=0.50, anchor=tk.CENTER)
-        gen_button.place(relx=.5, rely=.80, anchor=tk.CENTER)
+        self.main_gen_button.place(relx=.5, rely=.80, anchor=tk.CENTER)
+        self.mode_button.place(relx=.87, rely=.25, anchor=tk.CENTER)
         settings_button.place(relx=.87, rely=.1, anchor=tk.CENTER)
 
         self.main_frame.pack()
+
+    def change_main_mode(self):
+        if self.mode == 1:
+            self.mode = 2
+            self.main_slider.place(relx=0.5, rely=0.58, anchor=tk.CENTER)
+            self.main_slider_label.place(relx=0.5, rely=0.50, anchor=tk.CENTER)
+
+            self.main_password_entry.place_forget()
+            self.main_gen_button.config(text="Generate Password", command=lambda: self.get_password(self.main_web_entry.get(), self.main_user_entry.get()))
+        else:
+            self.mode = 1
+            self.main_slider_label.place_forget()
+            self.main_slider.place_forget()
+
+            self.main_password_entry.place(relx=.5, rely=.55, anchor=tk.CENTER)
+            self.main_gen_button.config(text="Save Password", command=lambda: self.save_custom_password(self.main_web_entry.get(), self.main_user_entry.get(), self.main_password_entry.get()))
 
     def update_slider_label(self, value):
         self.main_slider_label.config(text=str(int(value)))
@@ -126,7 +164,7 @@ class PassGUI:
             boxes.append(ct.CTkCheckBox(master=self.settings_frame,
                                       onvalue="on", offvalue="off", text="",))
             if values[i]: boxes[i].select() 
-            else: boxes[i].deselect
+            else: boxes[i].deselect()
             boxes[i].config(command=lambda v=i: self.update_settings(v))
             boxes[i].place(relx=.7, rely=0.1 + (i*0.1), anchor=tk.CENTER)
 
@@ -337,7 +375,7 @@ class PassGUI:
         f = self.file_location
         k = self.key_location
         if f and k:
-            self.logins_button.place(relx=.87, rely=.25, anchor=tk.CENTER)
+            self.logins_button.place(relx=.87, rely=.40, anchor=tk.CENTER)
             self.file_system = Save(self.file_location, self.key_location)
 
     def screen_size(self, screen):
@@ -393,7 +431,28 @@ class PassGUI:
                 if askyesno(title="Already Exists", message="Login already exists with the same username. Would you like to overwrite it?"):
                     self.file_system.overwrite_login(website, username, password)
             self.enable_main_widgets()
+            self.clear_entries()
 
+    def save_custom_password(self, website, username, password):
+        if "" in [website, username, password]:
+            self.gen_error_message("Missing website, username, or password")
+        elif all(i == False for i in self.settings_config):
+            self.gen_error_message("Must have at least one setting selected")
+        elif "," in website or "," in username or "," in password:
+            self.gen_error_message("Invalid character")
+        elif not (self.file_location and self.key_location):
+            self.gen_error_message("Savefile or key is missing. Locate or generate in settings.")
+        else:
+            if not self.file_system.save_login(website, username, password):
+                if askyesno(title="Already Exists", message="Login already exists with the same username. Would you like to overwrite it?"):
+                    self.file_system.overwrite_login(website, username, password)
+            self.clear_entries()
+
+    def clear_entries(self):
+        self.main_web_entry.delete(0, tk.END)
+        self.main_user_entry.delete(0, tk.END)
+        self.main_password_entry.delete(0, tk.END)
+            
     def disable_main_widgets(self):
         for widget in self.main_frame.winfo_children():
             widget.config(state="disabled")
