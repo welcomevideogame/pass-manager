@@ -1,16 +1,10 @@
 import os
-from sre_parse import State
 from tkinter import *
 import tkinter as tk
 from tkinter import filedialog
-from tkinter import dialog
-from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import askyesno
-from tkinter.ttk import Progressbar
 import customtkinter as ct
-from functools import partial
 
-import passGen
 from passGen import Generator
 from crypt import Encryption
 from cleanser import Clean
@@ -35,7 +29,7 @@ class PassGUI:
 
     #---------------------------- Settings Components
     settings_dim_w = 350
-    settings_dim_h = 350
+    settings_dim_h = 400
     settings_frame = ct.CTkFrame(root, width=settings_dim_w, height=settings_dim_h)
     progressbar = None
 
@@ -45,6 +39,7 @@ class PassGUI:
     settings_config.append(True)    # lowercase
     settings_config.append(True)    # uppercase
     settings_config.append(False)   # punctuation
+    settings_config.append(False)   # true 
     security_levels = [30, 20, 10, 20, 20]
     password_length = 64
 
@@ -126,14 +121,19 @@ class PassGUI:
 
         for i in range(len(titles)):
             label = ct.CTkLabel(master=self.settings_frame, text=f"Include {titles[i]}", width=200)
-            label.place(relx=.3, rely=0.1 + (i*0.13), anchor=tk.CENTER)
+            label.place(relx=.3, rely=0.1 + (i*0.1), anchor=tk.CENTER)
 
             boxes.append(ct.CTkCheckBox(master=self.settings_frame,
                                       onvalue="on", offvalue="off", text="",))
             if values[i]: boxes[i].select() 
             else: boxes[i].deselect
             boxes[i].config(command=lambda v=i: self.update_settings(v))
-            boxes[i].place(relx=.7, rely=0.1 + (i*0.13), anchor=tk.CENTER)
+            boxes[i].place(relx=.7, rely=0.1 + (i*0.1), anchor=tk.CENTER)
+
+        label2 = ct.CTkLabel(master=self.settings_frame, text="True Random (Slower)", width=200)
+        label2.place(relx=.321, rely=0.6, anchor=tk.CENTER)
+        box = ct.CTkCheckBox(master=self.settings_frame, onvalue="on", offvalue="off", text="", command=lambda: self.update_settings(5))
+        box.place(relx=.7, rely=0.6, anchor=tk.CENTER)
 
         back_button = ct.CTkButton(master=self.settings_frame,
                                 text="Back",
@@ -277,7 +277,7 @@ class PassGUI:
     
     def update_security_bar(self):
         total_security = 0
-        for i in range(len(self.settings_config)):
+        for i in range(len(self.settings_config) - 1):
             if self.settings_config[i]:
                 total_security += (self.security_levels[i] / 100) 
         self.progressbar.set(total_security)
@@ -382,10 +382,25 @@ class PassGUI:
         elif not (self.file_location and self.key_location):
             self.gen_error_message("Savefile or key is missing. Locate or generate in settings.")
         else:
-            password = Generator.generate_password(self.settings_config, int(self.password_length))
-            if not self.file_system.save_login(website, username, password): # method returns 0 if fails to save (existing login)
+            self.disable_main_widgets()
+            if self.settings_config[5]:
+                password = Generator.generate_true_password(self.settings_config[:5], int(self.password_length))
+            else:
+                password = Generator.generate_password(self.settings_config[:5], int(self.password_length))
+            if not password:
+                self.gen_error_message("You must be connected to the internet for true random passwords.")
+            elif not self.file_system.save_login(website, username, password): # method returns 0 if fails to save (existing login)
                 if askyesno(title="Already Exists", message="Login already exists with the same username. Would you like to overwrite it?"):
                     self.file_system.overwrite_login(website, username, password)
+            self.enable_main_widgets()
+
+    def disable_main_widgets(self):
+        for widget in self.main_frame.winfo_children():
+            widget.config(state="disabled")
+
+    def enable_main_widgets(self):
+        for widget in self.main_frame.winfo_children():
+            widget.config(state="normal")
 
     def gen_error_message(self, message):
         tk.messagebox.showerror(title="Invalid", message=message)
