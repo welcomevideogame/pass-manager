@@ -1,5 +1,3 @@
-import string
-
 class Clean:
     
     @staticmethod

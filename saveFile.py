@@ -1,12 +1,9 @@
 import csv
 from os.path import exists
-from crypt import Encryption
+from encrypt import Encryption
 from cleanser import Clean
 
 class Save:
-
-    file = None
-    key = None
 
     @staticmethod
     def create_new(path):

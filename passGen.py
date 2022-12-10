@@ -1,18 +1,23 @@
 import string
 import random
 import requests
+import secrets
 
 class Generator:
 
+    @staticmethod
     def generate_password(config, length=16):
-        chars = ''
-        char_list = ["!@#$%^&*", string.digits, string.ascii_lowercase, string.ascii_uppercase, ",.';-"]
-        for i in range(len(config)):
-            if config[i]:
-                chars += ''.join(random.SystemRandom().choices(char_list[i], k=length))
+        chars = ''.join([
+            string.digits if config[1] else '',
+            string.ascii_lowercase if config[2] else '',
+            string.ascii_uppercase if config[3] else '',
+            '!@#$%^&*' if config[4] else '', ])
+        password = ''.join([secrets.choice(chars) for _ in range(length)])
+        print(password)
+        return password.encode('utf-8')
 
-        return ''.join(random.SystemRandom().choices(chars, k=length))
 
+    @staticmethod
     def generate_true_password(config, length=16):
         chars = ''
         chars2 = ''

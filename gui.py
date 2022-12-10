@@ -6,7 +6,7 @@ from tkinter.messagebox import askyesno
 import customtkinter as ct
 
 from passGen import Generator
-from crypt import Encryption
+from encrypt import Encryption
 from cleanser import Clean
 from saveFile import Save
 import pyperclip
