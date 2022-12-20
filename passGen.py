@@ -1,16 +1,19 @@
 import string
 import requests
-import secrets
+import os
 
 class Generator:
-    csprng = secrets.SystemRandom()
+    csprng = os.urandom
 
     @classmethod
     def generate_password(cls, config, length=16):
         char_list = cls.get_chars(config)
-        rand_bytes = secrets.token_bytes(length)
-        password = [char_list[byte % len(char_list)] for byte in rand_bytes]
-        cls.csprng.shuffle(password)
+        password = []
+        while len(password) < length:
+            rand_byte = cls.csprng(1)[0]
+            char_index = rand_byte % len(char_list)
+            char = char_list[char_index]
+            password.append(char)
         return "".join(password)
 
     @classmethod
@@ -21,8 +24,12 @@ class Generator:
             nums = requests.get(source).text.replace("\n", "\t").split("\t")[:-1]
         except requests.exceptions.ConnectionError:
             return None
-        password = [char_list[int(num)] for num in nums]
-        cls.csprng.shuffle(password)
+
+        password = []
+        for i in range(length):
+            rand_index = cls.csprng(1)[0] % (i + 1)
+            char_list[i], char_list[rand_index] = char_list[rand_index], char_list[i]
+            password.append(char_list[i])
         return "".join(password)
 
     @staticmethod
